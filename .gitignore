@@ -1,0 +1,42 @@
+# Environment & Secrets (keep .env.example)
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Go binaries (anchored with a leading slash so that the internal/server/
+# and cmd/server/ source folders are NOT ignored, e.g. on the Jenkins runner)
+/server
+/main
+/app
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+*.prof
+/bin/
+/dist/
+
+# Test & coverage artifacts
+/cov
+/cov.*
+/coverage
+/coverage.*
+
+# Dependencies
+/vendor/
+
+# SonarQube & CI caches
+.scannerwork/
+
+# IDE, editors & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

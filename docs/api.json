@@ -1,0 +1,1251 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Delcom Blog REST API",
+    "description": "Dokumentasi RESTful API Backend Delcom Blog Multi-Tier & AI Generator dengan Integrasi Search Engine (Golang Gin, Feature-First & TDD).",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Delcom - Labs"
+    }
+  },
+  "host": "",
+  "basePath": "/",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "securityDefinitions": {
+    "BearerAuth": {
+      "type": "apiKey",
+      "name": "Authorization",
+      "in": "header",
+      "description": "Format token: Bearer <token_jwt>"
+    }
+  },
+  "paths": {
+    "/swagger/{any}": {
+      "get": {
+        "tags": [
+          "Docs"
+        ],
+        "summary": "Swagger UI",
+        "description": "Antarmuka Swagger UI interaktif.",
+        "responses": {
+          "200": {
+            "description": "HTML Swagger UI"
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "any",
+            "type": "string",
+            "required": true,
+            "description": "index.html, dll."
+          }
+        ]
+      }
+    },
+    "/api.json": {
+      "get": {
+        "tags": [
+          "Docs"
+        ],
+        "summary": "OpenAPI JSON dinamis",
+        "description": "Spesifikasi OpenAPI dengan host & scheme mengikuti URL request.",
+        "responses": {
+          "200": {
+            "description": "Dokumen OpenAPI 2.0"
+          }
+        }
+      }
+    },
+    "/api/public/categories": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Daftar kategori",
+        "description": "Kategori artikel yang tersedia.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/CategoriesEnvelope"
+            }
+          }
+        }
+      }
+    },
+    "/api/public/posts": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Artikel terbit",
+        "description": "Artikel publik yang sudah terbit.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostListEnvelope"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "type": "string",
+            "description": "Kata kunci (judul, ringkasan, isi)"
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "type": "string",
+            "description": "Filter kategori"
+          }
+        ]
+      }
+    },
+    "/api/public/posts/{slug}": {
+      "get": {
+        "tags": [
+          "Public"
+        ],
+        "summary": "Detail artikel terbit",
+        "description": "Detail artikel terbit berdasarkan slug, termasuk data penulis dan reading_time.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostEnvelope"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "slug",
+            "type": "string",
+            "required": true,
+            "description": "Slug artikel"
+          }
+        ]
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Registrasi penulis",
+        "description": "Mendaftarkan penulis baru. Role selalu `member`.",
+        "responses": {
+          "201": {
+            "description": "Berhasil",
+            "schema": {
+              "$ref": "#/definitions/AuthEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/RegisterRequest"
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Login dengan username/email dan password, mengembalikan JWT.",
+        "responses": {
+          "200": {
+            "description": "Berhasil",
+            "schema": {
+              "$ref": "#/definitions/AuthEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Kredensial salah",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/LoginRequest"
+            }
+          }
+        ]
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Mengakhiri sesi (token dibuang di sisi klien).",
+        "responses": {
+          "200": {
+            "description": "Berhasil"
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/auth/profile": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Profil penulis",
+        "description": "Profil penulis yang sedang login.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/UserEnvelope"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Update profil",
+        "description": "Mengubah email dan/atau password.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/UserEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdateProfileRequest"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/posts": {
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Artikel milik saya",
+        "description": "Seluruh artikel penulis login (terbit & draf).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostListEnvelope"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Buat artikel",
+        "description": "Membuat artikel dengan slug unik otomatis dan reading_time.",
+        "responses": {
+          "201": {
+            "description": "Dibuat",
+            "schema": {
+              "$ref": "#/definitions/PostEnvelope2"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreatePostRequest"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/posts/stats": {
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Statistik penulis",
+        "description": "Tiga kartu statistik: total, total_terbit, draft.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/StatsEnvelope"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/posts/ai-generate": {
+      "post": {
+        "tags": [
+          "AI"
+        ],
+        "summary": "AI Blog Generator",
+        "description": "Menghasilkan artikel. Jika `include_web_search` true, memanggil search engine dan menyertakan sitasi.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/GenerateEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Gagal memanggil OpenAI",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GeneratePostRequest"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/posts/{id}": {
+      "get": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Detail artikel saya",
+        "description": "Detail satu artikel milik penulis.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true,
+            "description": "ID"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "put": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Update artikel",
+        "description": "Mengubah artikel milik penulis (parsial).",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true,
+            "description": "ID"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/UpdatePostRequest"
+            }
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Hapus artikel",
+        "description": "Menghapus artikel milik penulis.",
+        "responses": {
+          "200": {
+            "description": "Berhasil"
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true,
+            "description": "ID"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/posts/{id}/toggle-publish": {
+      "patch": {
+        "tags": [
+          "Posts"
+        ],
+        "summary": "Toggle terbit/draf",
+        "description": "Mengubah status draf <-> terbit dan mengatur published_at.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true,
+            "description": "ID"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Semua user",
+        "description": "Monitoring user beserta total artikel.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/UserStatsEnvelope"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/posts": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Arsip semua artikel",
+        "description": "Seluruh artikel sistem.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostListEnvelope"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/api/admin/users/{id}/posts": {
+      "get": {
+        "tags": [
+          "Admin"
+        ],
+        "summary": "Artikel milik user",
+        "description": "Seluruh artikel milik user tertentu.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/PostListEnvelope"
+            }
+          },
+          "400": {
+            "description": "Permintaan tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "401": {
+            "description": "Token tidak ada / tidak valid",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "404": {
+            "description": "Tidak ditemukan",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "403": {
+            "description": "Bukan admin",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "type": "integer",
+            "required": true,
+            "description": "ID user"
+          }
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "fail"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "RegisterRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 72
+        }
+      },
+      "required": [
+        "username",
+        "email",
+        "password"
+      ]
+    },
+    "LoginRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "description": "Username atau email"
+        },
+        "password": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "username",
+        "password"
+      ]
+    },
+    "UpdateProfileRequest": {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email"
+        },
+        "password": {
+          "type": "string",
+          "minLength": 6,
+          "maxLength": 72
+        }
+      }
+    },
+    "UserResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "enum": [
+            "admin",
+            "member"
+          ]
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "AuthResponse": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "user": {
+          "$ref": "#/definitions/UserResponse"
+        }
+      }
+    },
+    "CreatePostRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Teknologi",
+            "Pendidikan",
+            "Gaya Hidup",
+            "Bisnis",
+            "Opini",
+            "Umum"
+          ]
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "Markdown"
+        },
+        "cover_image_path": {
+          "type": "string"
+        },
+        "is_published": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "title",
+        "content"
+      ]
+    },
+    "UpdatePostRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "Teknologi",
+            "Pendidikan",
+            "Gaya Hidup",
+            "Bisnis",
+            "Opini",
+            "Umum"
+          ]
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "cover_image_path": {
+          "type": "string",
+          "description": "Isi \"DELETE\" atau \"remove\" untuk menghapus cover"
+        },
+        "is_published": {
+          "type": "boolean"
+        }
+      }
+    },
+    "AuthorResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        }
+      }
+    },
+    "PostResponse": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "user_id": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "cover_image_path": {
+          "type": "string"
+        },
+        "is_published": {
+          "type": "boolean"
+        },
+        "published_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "reading_time": {
+          "type": "integer",
+          "description": "Menit baca = total kata / 200 wpm (min 1)"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updated_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "author": {
+          "$ref": "#/definitions/AuthorResponse"
+        }
+      }
+    },
+    "StatsResponse": {
+      "type": "object",
+      "properties": {
+        "total": {
+          "type": "integer"
+        },
+        "total_terbit": {
+          "type": "integer"
+        },
+        "draft": {
+          "type": "integer"
+        }
+      }
+    },
+    "UserWithStats": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "integer"
+        },
+        "username": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "total_posts": {
+          "type": "integer"
+        }
+      }
+    },
+    "GeneratePostRequest": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "include_web_search": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "prompt"
+      ]
+    },
+    "GeneratePostResponse": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        },
+        "category": {
+          "type": "string"
+        },
+        "excerpt": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string",
+          "description": "Markdown + sitasi"
+        },
+        "search_sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "CategoriesEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "PostListEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PostResponse"
+          }
+        }
+      }
+    },
+    "PostEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/PostResponse"
+        }
+      }
+    },
+    "AuthEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/AuthResponse"
+        }
+      }
+    },
+    "UserEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/UserResponse"
+        }
+      }
+    },
+    "PostEnvelope2": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/PostResponse"
+        }
+      }
+    },
+    "StatsEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/StatsResponse"
+        }
+      }
+    },
+    "GenerateEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/GeneratePostResponse"
+        }
+      }
+    },
+    "UserStatsEnvelope": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "example": "success"
+        },
+        "message": {
+          "type": "string"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/UserWithStats"
+          }
+        }
+      }
+    }
+  }
+}
