@@ -9,8 +9,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"app/internal/database"
 )
 
 type AiClientInterface interface {
@@ -47,14 +45,17 @@ type OpenAiClient struct {
 	HttpClient *http.Client
 }
 
-func NewOpenAiClient(endpoint, key, model string) *OpenAiClient {
+func NewOpenAiClient(endpoint, key, model string, timeout ...int) *OpenAiClient {
+	to := 50
+	if len(timeout) > 0 && timeout[0] > 0 {
+		to = timeout[0]
+	}
 	return &OpenAiClient{
 		Endpoint: strings.TrimRight(endpoint, "/"),
 		Key:      key,
 		Model:    model,
 		HttpClient: &http.Client{
-			// Writing a full article is slower than a short completion.
-			Timeout: 120 * time.Second,
+			Timeout: time.Duration(to) * time.Second,
 		},
 	}
 }
@@ -64,7 +65,12 @@ func (c *OpenAiClient) CheckAccess() error {
 		return errors.New("OpenAI API key is not configured")
 	}
 
-	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/models", c.Endpoint), nil)
+	endpoint := strings.TrimSuffix(c.Endpoint, "/")
+	if strings.HasSuffix(endpoint, "/chat/completions") {
+		endpoint = strings.TrimSuffix(endpoint, "/chat/completions")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("%s/models", endpoint), nil)
 	if err != nil {
 		return fmt.Errorf("invalid OpenAI endpoint: %w", err)
 	}
@@ -84,14 +90,7 @@ func (c *OpenAiClient) CheckAccess() error {
 }
 
 func buildSystemInstruction() string {
-	return fmt.Sprintf(`Kamu adalah penulis blog profesional berbahasa Indonesia.
-Tulis SATU artikel blog lengkap dan kembalikan HANYA objek JSON murni, TANPA blok markdown, TANPA kata pembuka/penutup.
-Format JSON wajib:
-{"title": "Judul menarik", "category": "salah satu dari: %s", "excerpt": "Ringkasan 1-2 kalimat (maks. 200 karakter)", "content": "Isi artikel dalam Markdown"}
-Aturan "content":
-- Gunakan Markdown: sub-judul (##), paragraf, dan daftar bila perlu.
-- Jika diberikan rujukan web, gunakan faktanya, kutip dengan penanda sitasi [1], [2], dst., lalu tutup artikel dengan bagian "## Referensi" berisi daftar tautan sumber.`,
-		strings.Join(database.PostCategories, ", "))
+	return `You are a professional blog writer. Respond ONLY with a valid JSON object without markdown fences, with keys: "title", "category", "excerpt", and "content" (in rich markdown).`
 }
 
 func buildUserPrompt(prompt, categoryHint string, searchSnippets []string) string {
@@ -145,7 +144,12 @@ func (c *OpenAiClient) GenerateBlog(prompt, categoryHint string, searchSnippets 
 	// Marshalling plain strings/floats cannot fail.
 	bodyBytes, _ := json.Marshal(reqPayload)
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/chat/completions", c.Endpoint), bytes.NewBuffer(bodyBytes))
+	endpoint := c.Endpoint
+	if !strings.HasSuffix(endpoint, "/chat/completions") {
+		endpoint = strings.TrimSuffix(endpoint, "/") + "/chat/completions"
+	}
+
+	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return nil, fmt.Errorf("invalid OpenAI endpoint: %w", err)
 	}

@@ -12,7 +12,7 @@ var envKeys = []string{
 	"APP_PORT", "APP_ENV", "APP_KEY", "ADMIN_USERNAME", "ADMIN_PASSWORD",
 	"DB_CONNECTION", "DB_HOST", "DB_PORT", "DB_DATABASE", "DB_USERNAME",
 	"DB_PASSWORD", "DB_SSLMODE", "SEARCH_ENGINE_ENDPOINT",
-	"OPENAI_ENDPOINT", "OPENAI_KEY", "OPENAI_MODEL",
+	"OPENAI_ENDPOINT", "OPENAI_KEY", "OPENAI_MODEL", "AI_TIMEOUT",
 }
 
 func clearEnv() {
@@ -41,6 +41,7 @@ func TestLoadConfig_Defaults(t *testing.T) {
 	assert.Equal(t, "https://delcom.org/api/v1", cfg.OpenAIEndpoint)
 	assert.Equal(t, "key", cfg.OpenAIKey)
 	assert.Equal(t, "nama-model", cfg.OpenAIModel)
+	assert.Equal(t, 50, cfg.AITimeout)
 
 	expectedDSN := "host=127.0.0.1 user=postgres password=postgres dbname=pabwe_p9_blog port=5432 sslmode=disable TimeZone=Asia/Jakarta"
 	assert.Equal(t, expectedDSN, cfg.DSN())
@@ -69,6 +70,7 @@ SEARCH_ENGINE_ENDPOINT=https://custom.api/v1/search
 OPENAI_ENDPOINT=https://custom.api/v1
 OPENAI_KEY=my-secret-key
 OPENAI_MODEL=gpt-4o
+AI_TIMEOUT=60
 `
 	err := os.WriteFile(envFile, []byte(content), 0644)
 	assert.NoError(t, err)
@@ -90,4 +92,14 @@ OPENAI_MODEL=gpt-4o
 	assert.Equal(t, "https://custom.api/v1", cfg.OpenAIEndpoint)
 	assert.Equal(t, "my-secret-key", cfg.OpenAIKey)
 	assert.Equal(t, "gpt-4o", cfg.OpenAIModel)
+	assert.Equal(t, 60, cfg.AITimeout)
+}
+
+func TestLoadConfig_InvalidAITimeout(t *testing.T) {
+	clearEnv()
+	t.Cleanup(clearEnv)
+
+	_ = os.Setenv("AI_TIMEOUT", "invalid-int")
+	cfg := LoadConfig("")
+	assert.Equal(t, 50, cfg.AITimeout)
 }

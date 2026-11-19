@@ -38,7 +38,7 @@ func SetupRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	postHdr := post.NewPostHandler(postSvc)
 
 	searchClient := ai.NewSearchEngineClient(cfg.SearchEngineEndpoint)
-	aiClient := ai.NewOpenAiClient(cfg.OpenAIEndpoint, cfg.OpenAIKey, cfg.OpenAIModel)
+	aiClient := ai.NewOpenAiClient(cfg.OpenAIEndpoint, cfg.OpenAIKey, cfg.OpenAIModel, cfg.AITimeout)
 	aiSvc := ai.NewAiService(aiClient, searchClient)
 	aiHdr := ai.NewAiHandler(aiSvc)
 

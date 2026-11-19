@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"app/internal/database"
 	"github.com/gin-gonic/gin"
@@ -227,13 +228,21 @@ func TestOpenAiClient_GenerateBlog_Success(t *testing.T) {
 	assert.Equal(t, "Bearer test-key", gotAuth)
 	assert.Equal(t, "/chat/completions", gotPath)
 	assert.Equal(t, "test-model", gotReq.Model)
+	assert.Equal(t, 50*time.Second, client.HttpClient.Timeout)
 	require.Len(t, gotReq.Messages, 2)
 	assert.Equal(t, "system", gotReq.Messages[0].Role)
-	assert.Contains(t, gotReq.Messages[0].Content, "Gaya Hidup")
+	assert.Contains(t, gotReq.Messages[0].Content, "You are a professional blog writer")
 	assert.Contains(t, gotReq.Messages[1].Content, "Tulis Golang")
 	assert.Contains(t, gotReq.Messages[1].Content, "Kategori yang diinginkan: Teknologi")
 	assert.Contains(t, gotReq.Messages[1].Content, "1. Snippet 1")
 	assert.Contains(t, gotReq.Messages[1].Content, "## Referensi")
+
+	clientCustomTimeout := NewOpenAiClient(srv.URL+"/chat/completions", "test-key", "test-model", 30)
+	assert.Equal(t, 30*time.Second, clientCustomTimeout.HttpClient.Timeout)
+	post2, err2 := clientCustomTimeout.GenerateBlog("Tulis Golang", "", nil)
+	require.NoError(t, err2)
+	assert.Equal(t, "Judul", post2.Title)
+	assert.Equal(t, "/chat/completions", gotPath)
 }
 
 func TestBuildUserPrompt(t *testing.T) {
@@ -316,6 +325,7 @@ func TestOpenAiClient_CheckAccess(t *testing.T) {
 	}))
 	defer ok.Close()
 	assert.NoError(t, NewOpenAiClient(ok.URL, "test-key", "m").CheckAccess())
+	assert.NoError(t, NewOpenAiClient(ok.URL+"/chat/completions", "test-key", "m").CheckAccess())
 
 	// missing key
 	assert.ErrorContains(t, NewOpenAiClient(ok.URL, "  ", "m").CheckAccess(), "not configured")

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/joho/godotenv"
 )
@@ -24,6 +25,7 @@ type Config struct {
 	OpenAIEndpoint       string
 	OpenAIKey            string
 	OpenAIModel          string
+	AITimeout            int
 }
 
 func getEnv(key, defaultVal string) string {
@@ -32,6 +34,18 @@ func getEnv(key, defaultVal string) string {
 		return defaultVal
 	}
 	return val
+}
+
+func getEnvInt(key string, defaultVal int) int {
+	val := os.Getenv(key)
+	if val == "" {
+		return defaultVal
+	}
+	parsed, err := strconv.Atoi(val)
+	if err != nil {
+		return defaultVal
+	}
+	return parsed
 }
 
 // LoadConfig reads configuration from the process environment. When an env
@@ -61,6 +75,7 @@ func LoadConfig(envPath ...string) *Config {
 		OpenAIEndpoint:       getEnv("OPENAI_ENDPOINT", "https://delcom.org/api/v1"),
 		OpenAIKey:            getEnv("OPENAI_KEY", "key"),
 		OpenAIModel:          getEnv("OPENAI_MODEL", "nama-model"),
+		AITimeout:            getEnvInt("AI_TIMEOUT", 50),
 	}
 }
 
