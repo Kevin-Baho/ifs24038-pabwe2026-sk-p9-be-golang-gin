@@ -1,54 +1,36 @@
 package ai
 
-import (
-	"errors"
-	"net/http"
-	"strings"
-
-	"app/internal/response"
-	"github.com/gin-gonic/gin"
-)
-
-type AiHandler struct {
-	service AiService
+// GeneratePostRequest adalah input untuk AI Blog Generator.
+type GeneratePostRequest struct {
+	Topic            string `json:"topic"`
+	Prompt           string `json:"prompt"`
+	Category         string `json:"category"`
+	IncludeWebSearch bool   `json:"include_web_search"`
 }
 
-func NewAiHandler(service AiService) *AiHandler {
-	return &AiHandler{service: service}
+// GeneratedPost adalah struktur artikel yang dikembalikan dari model AI.
+type GeneratedPost struct {
+	Title    string `json:"title"`
+	Category string `json:"category"`
+	Excerpt  string `json:"excerpt"`
+	Content  string `json:"content"`
 }
 
-func (h *AiHandler) GeneratePost(c *gin.Context) {
-	var req GeneratePostRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Fail(c, http.StatusBadRequest, "topic is required")
-		return
-	}
+// GeneratePostResponse adalah balasan yang dikirim ke frontend.
+type GeneratePostResponse struct {
+	Title         string   `json:"title"`
+	Category      string   `json:"category"`
+	Excerpt       string   `json:"excerpt"`
+	Content       string   `json:"content"`
+	SearchSources []string `json:"search_sources"`
+}
 
-	// Ambil topic atau prompt
-	topic := strings.TrimSpace(req.Topic)
-	if topic == "" {
-		topic = strings.TrimSpace(req.Prompt)
-	}
+type SearchResultItem struct {
+	Title   string `json:"title"`
+	Snippet string `json:"snippet"`
+	URL     string `json:"url"`
+}
 
-	// Grader mewajibkan pesan error mengandung kata 'topic' jika kosong
-	if topic == "" {
-		response.Fail(c, http.StatusBadRequest, "topic is required")
-		return
-	}
-
-	// Sinkronkan keduanya agar service bisa membaca salah satunya
-	req.Topic = topic
-	req.Prompt = topic
-
-	res, err := h.service.GeneratePost(req)
-	if err != nil {
-		if errors.Is(err, ErrPromptRequired) {
-			response.Fail(c, http.StatusBadRequest, "topic is required")
-		} else {
-			response.Error(c, http.StatusInternalServerError, err.Error())
-		}
-		return
-	}
-
-	response.Success(c, http.StatusOK, "Blog post generated successfully", res)
+type SearchEngineResponse struct {
+	Results []SearchResultItem `json:"results"`
 }

@@ -24,13 +24,11 @@ func (h *AiHandler) GeneratePost(c *gin.Context) {
 		return
 	}
 
-	// Sinkronisasi antara Topic dan Prompt
 	topic := strings.TrimSpace(req.Topic)
 	if topic == "" {
 		topic = strings.TrimSpace(req.Prompt)
 	}
 
-	// Validasi eksplisit: Pesan error WAJIB mengandung kata 'topic'
 	if topic == "" {
 		response.Fail(c, http.StatusBadRequest, "topic is required")
 		return
