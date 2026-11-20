@@ -18,7 +18,8 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 
-	r := server.SetupRouter(db, cfg)
+	// Urutan yang benar: cfg dulu, baru db
+	r := server.SetupRouter(cfg, db)
 
 	port := os.Getenv("PORT")
 	if port == "" {
