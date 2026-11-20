@@ -77,9 +77,9 @@ func RequireRole(allowedRoles ...string) gin.HandlerFunc {
 			return
 		}
 
-		userRole := roleVal.(string)
+		userRole := strings.ToLower(roleVal.(string))
 		for _, r := range allowedRoles {
-			if r == userRole {
+			if strings.ToLower(r) == userRole {
 				c.Next()
 				return
 			}

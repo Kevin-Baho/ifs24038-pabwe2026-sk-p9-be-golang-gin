@@ -8,7 +8,8 @@ import (
 	"app/internal/database"
 )
 
-var ErrPromptRequired = errors.New("prompt is required")
+var ErrTopicRequired = errors.New("topic is required")
+var ErrPromptRequired = ErrTopicRequired
 
 type AiService interface {
 	GeneratePost(req GeneratePostRequest) (*GeneratePostResponse, error)
@@ -64,9 +65,12 @@ func appendReferences(content string, sources []string) string {
 }
 
 func (s *aiService) GeneratePost(req GeneratePostRequest) (*GeneratePostResponse, error) {
-	prompt := strings.TrimSpace(req.Prompt)
+	prompt := strings.TrimSpace(req.Topic)
 	if prompt == "" {
-		return nil, ErrPromptRequired
+		prompt = strings.TrimSpace(req.Prompt)
+	}
+	if prompt == "" {
+		return nil, ErrTopicRequired
 	}
 
 	// 1. Verify the OpenAI connection before doing any other work

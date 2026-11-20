@@ -3,7 +3,8 @@ package ai
 // GeneratePostRequest is the AI Blog Generator input.
 // Category is an optional hint; IncludeWebSearch enables the search engine step.
 type GeneratePostRequest struct {
-	Prompt           string `json:"prompt" binding:"required"`
+	Topic            string `json:"topic"`
+	Prompt           string `json:"prompt"`
 	Category         string `json:"category"`
 	IncludeWebSearch bool   `json:"include_web_search"`
 }

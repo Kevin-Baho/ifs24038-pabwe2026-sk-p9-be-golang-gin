@@ -25,7 +25,7 @@ func (h *AiHandler) GeneratePost(c *gin.Context) {
 
 	res, err := h.service.GeneratePost(req)
 	if err != nil {
-		if errors.Is(err, ErrPromptRequired) {
+		if errors.Is(err, ErrPromptRequired) || errors.Is(err, ErrTopicRequired) {
 			response.Fail(c, http.StatusBadRequest, err.Error())
 		} else {
 			response.Error(c, http.StatusInternalServerError, err.Error())

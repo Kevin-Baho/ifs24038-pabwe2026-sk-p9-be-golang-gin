@@ -17,8 +17,8 @@ const (
 type PostService interface {
 	// Public
 	GetCategories() []string
-	GetPublicPosts(q, category string) ([]PostResponse, error)
-	GetPublicPostBySlug(slug string) (*PostResponse, error)
+	GetPublicPosts(q, category string) ([]PublicPostResponse, error)
+	GetPublicPostBySlug(slug string) (*PublicPostResponse, error)
 
 	// Author
 	GetMyPosts(userID uint) ([]PostResponse, error)
@@ -146,6 +146,40 @@ func toPostResponses(posts []database.Post) []PostResponse {
 	return res
 }
 
+func toPublicPostResponse(p database.Post, withContent bool) PublicPostResponse {
+	res := PublicPostResponse{
+		ID:             p.ID,
+		UserID:         p.UserID,
+		Title:          p.Title,
+		Slug:           p.Slug,
+		Category:       p.Category,
+		Excerpt:        p.Excerpt,
+		CoverImagePath: p.CoverImagePath,
+		IsPublished:    p.IsPublished,
+		PublishedAt:    p.PublishedAt,
+		ReadingTime:    CalculateReadingTime(p.Content),
+		CreatedAt:      p.CreatedAt,
+		UpdatedAt:      p.UpdatedAt,
+	}
+	if withContent {
+		res.Content = p.Content
+	}
+	if p.User != nil {
+		res.Author = &AuthorResponse{ID: p.User.ID, Username: p.User.Username}
+	} else {
+		res.Author = &AuthorResponse{ID: p.UserID, Username: ""}
+	}
+	return res
+}
+
+func toPublicPostResponses(posts []database.Post) []PublicPostResponse {
+	res := make([]PublicPostResponse, 0, len(posts))
+	for _, p := range posts {
+		res = append(res, toPublicPostResponse(p, false))
+	}
+	return res
+}
+
 func (s *postService) uniqueSlug(title string) (string, error) {
 	base := slugify(title)
 	slug := base
@@ -161,14 +195,14 @@ func (s *postService) uniqueSlug(title string) (string, error) {
 	}
 }
 
-// findOwned loads a post and hides posts of other authors behind ErrNotFound.
+// findOwned loads a post by ID; if not in DB -> ErrNotFound, if owned by another user -> ErrForbidden.
 func (s *postService) findOwned(userID, id uint) (*database.Post, error) {
 	p, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 	if p.UserID != userID {
-		return nil, ErrNotFound
+		return nil, ErrForbidden
 	}
 	return p, nil
 }
@@ -185,20 +219,20 @@ func (s *postService) GetCategories() []string {
 	return append([]string{}, database.PostCategories...)
 }
 
-func (s *postService) GetPublicPosts(q, category string) ([]PostResponse, error) {
+func (s *postService) GetPublicPosts(q, category string) ([]PublicPostResponse, error) {
 	posts, err := s.repo.FindPublished(strings.TrimSpace(q), strings.TrimSpace(category))
 	if err != nil {
 		return nil, err
 	}
-	return toPostResponses(posts), nil
+	return toPublicPostResponses(posts), nil
 }
 
-func (s *postService) GetPublicPostBySlug(slug string) (*PostResponse, error) {
+func (s *postService) GetPublicPostBySlug(slug string) (*PublicPostResponse, error) {
 	p, err := s.repo.FindPublishedBySlug(slug)
 	if err != nil {
 		return nil, err
 	}
-	res := toPostResponse(*p, true)
+	res := toPublicPostResponse(*p, true)
 	return &res, nil
 }
 
@@ -318,9 +352,9 @@ func (s *postService) GetStats(userID uint) (*StatsResponse, error) {
 		return nil, err
 	}
 	return &StatsResponse{
-		Total:       total,
-		TotalTerbit: published,
-		Draft:       total - published,
+		TotalArticles: total,
+		TotalSelesai:  published,
+		BelumSelesai:  total - published,
 	}, nil
 }
 
@@ -357,9 +391,6 @@ func (s *postService) GetAllPosts() ([]PostResponse, error) {
 }
 
 func (s *postService) GetUserPosts(targetUserID uint) ([]PostResponse, error) {
-	if _, err := s.repo.FindUserByID(targetUserID); err != nil {
-		return nil, err
-	}
 	posts, err := s.repo.FindByUserID(targetUserID)
 	if err != nil {
 		return nil, err

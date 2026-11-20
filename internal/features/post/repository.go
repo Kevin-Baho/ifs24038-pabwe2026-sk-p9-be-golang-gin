@@ -10,6 +10,7 @@ import (
 
 var (
 	ErrNotFound        = errors.New("post not found")
+	ErrForbidden       = errors.New("Forbidden: bukan milik Anda")
 	ErrUserNotFound    = errors.New("user not found")
 	ErrInvalidCategory = errors.New("invalid category")
 	ErrInvalidInput    = errors.New("title and content must not be blank")

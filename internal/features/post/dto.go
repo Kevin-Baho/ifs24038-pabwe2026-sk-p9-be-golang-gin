@@ -44,11 +44,28 @@ type PostResponse struct {
 	Author         *AuthorResponse `json:"author,omitempty"`
 }
 
-// StatsResponse powers the three statistic cards of the author dashboard.
+type PublicPostResponse struct {
+	ID             uint            `json:"id"`
+	UserID         uint            `json:"-"`
+	Title          string          `json:"title"`
+	Slug           string          `json:"slug"`
+	Category       string          `json:"category"`
+	Excerpt        string          `json:"excerpt"`
+	Content        string          `json:"content,omitempty"`
+	CoverImagePath string          `json:"cover_image_path,omitempty"`
+	IsPublished    bool            `json:"is_published"`
+	PublishedAt    *time.Time      `json:"published_at,omitempty"`
+	ReadingTime    int             `json:"reading_time"`
+	CreatedAt      time.Time       `json:"created_at"`
+	UpdatedAt      time.Time       `json:"updated_at"`
+	Author         *AuthorResponse `json:"author"`
+}
+
+// StatsResponse powers the statistics for the author dashboard.
 type StatsResponse struct {
-	Total       int64 `json:"total"`
-	TotalTerbit int64 `json:"total_terbit"`
-	Draft       int64 `json:"draft"`
+	TotalArticles int64 `json:"total_articles"`
+	TotalSelesai  int64 `json:"total_selesai"`
+	BelumSelesai  int64 `json:"belum_selesai"`
 }
 
 type UserWithStats struct {

@@ -234,7 +234,7 @@ func TestSetupRouter_AllEndpoints(t *testing.T) {
 
 	w, e = call(r, http.MethodGet, "/api/posts/stats", token, "")
 	assert.Equal(t, http.StatusOK, w.Code)
-	assert.JSONEq(t, `{"total":1,"total_terbit":0,"draft":1}`, string(e.Data))
+	assert.JSONEq(t, `{"total_articles":1,"total_selesai":0,"belum_selesai":1}`, string(e.Data))
 
 	w, _ = call(r, http.MethodGet, "/api/posts/"+id, token, "")
 	assert.Equal(t, http.StatusOK, w.Code)

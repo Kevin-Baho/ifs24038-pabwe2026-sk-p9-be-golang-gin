@@ -38,6 +38,8 @@ func parseID(c *gin.Context) (uint, bool) {
 // writeError maps service errors to the standard response envelope.
 func writeError(c *gin.Context, err error) {
 	switch {
+	case errors.Is(err, ErrForbidden):
+		response.Fail(c, http.StatusForbidden, err.Error())
 	case errors.Is(err, ErrNotFound), errors.Is(err, ErrUserNotFound):
 		response.Fail(c, http.StatusNotFound, err.Error())
 	case errors.Is(err, ErrInvalidCategory), errors.Is(err, ErrInvalidInput):
