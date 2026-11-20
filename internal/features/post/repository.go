@@ -34,7 +34,7 @@ type PostRepository interface {
 	FindAll() ([]database.Post, error)
 	FindAllUsers() ([]database.User, error)
 	FindUserByID(id uint) (*database.User, error)
-	CountPostsPerUser() (map[uint]int64, error)
+	CountPostsPerUser() (map[uint]UserPostStats, error)
 }
 
 type postRepository struct {
@@ -144,24 +144,25 @@ func (r *postRepository) FindUserByID(id uint) (*database.User, error) {
 	return &user, nil
 }
 
-type userPostCount struct {
-	UserID uint
-	Total  int64
+type UserPostStats struct {
+	UserID    uint
+	Total     int64
+	Published int64
 }
 
-func (r *postRepository) CountPostsPerUser() (map[uint]int64, error) {
-	var rows []userPostCount
+func (r *postRepository) CountPostsPerUser() (map[uint]UserPostStats, error) {
+	var rows []UserPostStats
 	err := r.db.Model(&database.Post{}).
-		Select("user_id, COUNT(*) AS total").
+		Select("user_id, COUNT(*) AS total, COALESCE(SUM(CASE WHEN is_published = ? THEN 1 ELSE 0 END), 0) AS published", true).
 		Group("user_id").
 		Scan(&rows).Error
 	if err != nil {
 		return nil, err
 	}
 
-	counts := make(map[uint]int64, len(rows))
+	counts := make(map[uint]UserPostStats, len(rows))
 	for _, row := range rows {
-		counts[row.UserID] = row.Total
+		counts[row.UserID] = row
 	}
 	return counts, nil
 }

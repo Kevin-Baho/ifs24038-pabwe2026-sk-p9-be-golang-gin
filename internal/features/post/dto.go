@@ -58,7 +58,8 @@ type PublicPostResponse struct {
 	ReadingTime    int             `json:"reading_time"`
 	CreatedAt      time.Time       `json:"created_at"`
 	UpdatedAt      time.Time       `json:"updated_at"`
-	Author         *AuthorResponse `json:"author"`
+	AuthorName     string          `json:"author_name"`
+	Author         *AuthorResponse `json:"author,omitempty"`
 }
 
 // StatsResponse powers the statistics for the author dashboard.
@@ -69,10 +70,12 @@ type StatsResponse struct {
 }
 
 type UserWithStats struct {
-	ID         uint      `json:"id"`
-	Username   string    `json:"username"`
-	Email      string    `json:"email"`
-	Role       string    `json:"role"`
-	CreatedAt  time.Time `json:"created_at"`
-	TotalPosts int64     `json:"total_posts"`
+	ID             uint      `json:"id"`
+	Username       string    `json:"username"`
+	Email          string    `json:"email"`
+	Role           string    `json:"role"`
+	CreatedAt      time.Time `json:"created_at"`
+	TotalArticles  int64     `json:"total_articles"`
+	TotalPublished int64     `json:"total_published"`
+	TotalPosts     int64     `json:"total_posts"`
 }

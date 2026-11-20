@@ -106,9 +106,17 @@ func registerUser(t *testing.T, r http.Handler, username, email string) AuthResp
 func TestAuth_RegisterAndLogin_Success(t *testing.T) {
 	r, _, repo, _ := setup(t)
 
-	// Register: a client-supplied role must be ignored (always "member")
+	// Register with role "admin"
 	w := do(r, http.MethodPost, "/register",
-		`{"username":"johndoe","email":"John@Example.com","password":"password123","role":"admin"}`)
+		`{"username":"adminuser","email":"admin@example.com","password":"password123","role":"admin"}`)
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var regAdmin AuthResponse
+	require.NoError(t, json.Unmarshal(parse(t, w).Data, &regAdmin))
+	assert.Equal(t, database.RoleAdmin, regAdmin.User.Role)
+
+	// Register with default role or invalid role: becomes "member"
+	w = do(r, http.MethodPost, "/register",
+		`{"username":"johndoe","email":"John@Example.com","password":"password123","role":"superman"}`)
 	assert.Equal(t, http.StatusCreated, w.Code)
 	env := parse(t, w)
 	assert.Equal(t, "success", env.Status)

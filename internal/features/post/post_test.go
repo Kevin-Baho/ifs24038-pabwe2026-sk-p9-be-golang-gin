@@ -420,6 +420,8 @@ func TestPost_PublicEndpoints(t *testing.T) {
 	require.Len(t, list, 2)
 	assert.Equal(t, pub2.Slug, list[0].Slug)
 	assert.Equal(t, pub1.Slug, list[1].Slug)
+	assert.Equal(t, "other", list[0].AuthorName)
+	assert.Equal(t, "owner", list[1].AuthorName)
 	assert.NotNil(t, list[0].Author)
 	// user_id must NOT appear in the JSON
 	rawBody := string(envOf(t, send(r, http.MethodGet, "/public/posts", "")).Data)
@@ -470,8 +472,10 @@ func TestPost_AdminEndpoints(t *testing.T) {
 	totals := map[string]int64{}
 	for _, u := range users {
 		totals[u.Username] = u.TotalPosts
+		assert.Equal(t, u.TotalPosts, u.TotalArticles)
 	}
 	assert.Equal(t, map[string]int64{"owner": 2, "other": 1, "boss": 0}, totals)
+	assert.Equal(t, int64(1), users[0].TotalPublished)
 	assert.Equal(t, database.RoleAdmin, users[2].Role)
 
 	// every post of the system, drafts included

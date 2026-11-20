@@ -147,6 +147,7 @@ func toPostResponses(posts []database.Post) []PostResponse {
 }
 
 func toPublicPostResponse(p database.Post, withContent bool) PublicPostResponse {
+	authorName := ""
 	res := PublicPostResponse{
 		ID:             p.ID,
 		UserID:         p.UserID,
@@ -165,10 +166,12 @@ func toPublicPostResponse(p database.Post, withContent bool) PublicPostResponse 
 		res.Content = p.Content
 	}
 	if p.User != nil {
+		authorName = p.User.Username
 		res.Author = &AuthorResponse{ID: p.User.ID, Username: p.User.Username}
 	} else {
 		res.Author = &AuthorResponse{ID: p.UserID, Username: ""}
 	}
+	res.AuthorName = authorName
 	return res
 }
 
@@ -370,13 +373,16 @@ func (s *postService) GetAllUsers() ([]UserWithStats, error) {
 
 	results := make([]UserWithStats, 0, len(users))
 	for _, u := range users {
+		stat := counts[u.ID]
 		results = append(results, UserWithStats{
-			ID:         u.ID,
-			Username:   u.Username,
-			Email:      u.Email,
-			Role:       u.Role,
-			CreatedAt:  u.CreatedAt,
-			TotalPosts: counts[u.ID],
+			ID:             u.ID,
+			Username:       u.Username,
+			Email:          u.Email,
+			Role:           u.Role,
+			CreatedAt:      u.CreatedAt,
+			TotalArticles:  stat.Total,
+			TotalPublished: stat.Published,
+			TotalPosts:     stat.Total,
 		})
 	}
 	return results, nil
